@@ -1,0 +1,17 @@
+SELECT
+    Stream.IoTHub.ConnectionDeviceId AS IoTHubDeviceID,
+    Stream.msgId AS MessageID,
+    Stream.light AS Light,
+    Stream.depreciation AS Depreciation,
+    Stream.[power] AS [Power],    
+    0.3 AS Repair,
+    CASE
+        WHEN Stream.depreciation < 0.3 THEN 1
+        ELSE 0
+    END AS RepairAlarm,
+    Stream.time AS LocalTime,
+    Stream.EventEnqueuedUtcTime AS CreatedAt
+INTO 
+    [sqldb]
+FROM 
+    [iothub] Stream
