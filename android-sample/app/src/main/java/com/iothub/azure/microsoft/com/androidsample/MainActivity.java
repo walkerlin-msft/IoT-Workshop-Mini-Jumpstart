@@ -18,7 +18,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
 
-    public static String connString = "HostName=iothubworkshop.azure-devices.net;DeviceId=AndroidDevice;SharedAccessKey=mxuTlxoqnaqyCAOoU00OY9S296FFup7oQFkHyzOwA1g=";
+    public static String connString = "[Please put your IoT Hub Connection String]";
 
     //public static IotHubClientProtocol protocol = IotHubClientProtocol.HTTPS;
     public static IotHubClientProtocol protocol = IotHubClientProtocol.MQTT;
@@ -44,8 +44,6 @@ public class MainActivity extends AppCompatActivity {
         this.context = this;
 
         findAllViews();
-
-
     }
 
     private void findAllViews() {
