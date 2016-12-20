@@ -9,10 +9,7 @@ namespace AlarmServiceBusConsoleApp
 {
     class C2DCommand
     {
-        public const string COMMAND_CUTOUT_SPEED_WARNING = "CUTOUT_SPEED_WARNING";
-        public const string COMMAND_REPAIR_WARNING = "REPAIR_WARNING";
-        public const string COMMAND_TURN_ONOFF = "TURN_ONOFF";
-        public const string COMMAND_RESET_DEPRECIATION = "RESET_DEPRECIATION";
+        public const string COMMAND_LIGHT_WARNING = "COMMAND_LIGHT_WARNING";
 
         public string command { get; set; }
         public string value { get; set; }

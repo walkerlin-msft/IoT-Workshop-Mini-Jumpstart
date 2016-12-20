@@ -84,12 +84,13 @@
   <ItemGroup>
     <Compile Include="AlarmMessage.cs" />
     <Compile Include="C2DCommand.cs" />
-    <Compile Include="C2DCommandLinux.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config" />
     <None Include="Properties\PublishProfiles\iotworkshop20161118 - Web Deploy.pubxml" />
     <None Include="Properties\webjob-publish-settings.json" />
