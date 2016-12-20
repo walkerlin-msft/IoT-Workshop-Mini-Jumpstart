@@ -14,7 +14,10 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.TimeZone;
 
 /**
  * Created by a-walin on 2016/12/14.
@@ -26,6 +29,7 @@ public class SendMessageAsyncTask extends AsyncTask<Void, ArrayList<String>, Voi
 
     MainActivity activity;
     ProgressUpdateCallback progressUpdateCallback;
+    double windPower;
 
     public SendMessageAsyncTask(MainActivity activity, ProgressUpdateCallback progressUpdateCallback) {
         this.activity = activity;
@@ -37,158 +41,143 @@ public class SendMessageAsyncTask extends AsyncTask<Void, ArrayList<String>, Voi
         try {
             DeviceClient client = new DeviceClient(MainActivity.connString, MainActivity.protocol);
 
-            if (MainActivity.protocol == IotHubClientProtocol.MQTT)
-            {
+            if (MainActivity.protocol == IotHubClientProtocol.MQTT) {
                 MessageCallbackMqtt callback = new MessageCallbackMqtt();
                 Counter counter = new Counter(0);
                 client.setMessageCallback(callback, counter);
-}
-        else
-        {
-        MessageCallback callback = new MessageCallback();
-        Counter counter = new Counter(0);
-        client.setMessageCallback(callback, counter);
-        }
+            } else {
+                MessageCallback callback = new MessageCallback();
+                Counter counter = new Counter(0);
+                client.setMessageCallback(callback, counter);
+            }
 
-        return client;
+            return client;
         } catch (URISyntaxException e) {
-        Log.e(TAG, "URISyntaxException e="+e.getMessage());
-        } catch(Exception e) {
-        Log.e(TAG, "Exception e="+e.getMessage());
+            Log.e(TAG, "URISyntaxException e=" + e.getMessage());
+        } catch (Exception e) {
+            Log.e(TAG, "Exception e=" + e.getMessage());
         }
 
         return null;
-        }
+    }
 
-        @Override
-        protected Void doInBackground(Void... longs) {
+    @Override
+    protected Void doInBackground(Void... longs) {
 
-            DeviceClient client = createDeviceClient();
+        DeviceClient client = createDeviceClient();
 
-            try {
-                client.open();
+        try {
+            client.open();
 
-                int i = 1;
-                while (i > 0)
-                {
-                    if(isCancelled()) {
-                        client.close();
-                        return null;
-                    }
+            int i = 1;
+            while (i > 0) {
+                if (isCancelled()) {
+                    client.close();
+                    return null;
+                }
 
-                    String msgStr = "Message " + Integer.toString(i);
-                    //  Get UI values
-                    JSONObject json= new JSONObject();
-                    json.put("WindSpeed", this.activity.getWindSpeed());
-                    float depreciation = this.activity.getDepreciation();
-                    Log.d(TAG, "depreciation="+depreciation);
-                    //depreciation = (float)(Math.round(depreciation*100)/100);
-                    //Log.d(TAG, "depreciation2="+depreciation);
-                    json.put("Depreciation", depreciation);
-                    json.put("MesgId", msgStr);
-
-                    try
-                    {
+                JSONObject json = new JSONObject();
+                json.put("deviceId", "AndroidDevice");
+                json.put("msgId", "Message id " + Integer.toString(i));
+                json.put("light", this.activity.getLight());
+                json.put("depreciation", this.activity.getDepreciation());
+                json.put("power", getPower(this.activity.getLight(), this.activity.getDepreciation()));
+                json.put("time", getUTCdatetimeAsString());
+                Log.d(TAG, json.toString());
+                try {
                     Message msg = new Message(json.toString());
-                    msg.setProperty("messageCount", Integer.toString(i));
+                    msg.setProperty("msgType", "Telemetry");
 
                     EventCallback eventCallback = new EventCallback();
                     client.sendEventAsync(msg, eventCallback, i);
 
                     publishMessage("SEND", json.toString());
-                    }
-                    catch (Exception e)
-                    {
-                    }
-                    try {
-                    Thread.sleep(2000);
-                    } catch (InterruptedException e) {
+                } catch (Exception e) {
+                }
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
                     e.printStackTrace();
-                    }
+                }
 
-                    i++;
-                    }
-            } catch (IOException e) {
-            Log.e(TAG, "IOException e="+e.getMessage());
-            } catch(Exception e) {
-            Log.e(TAG, "Exception e="+e.getMessage());
+                i++;
             }
-
-            return null;
+        } catch (IOException e) {
+            Log.e(TAG, "IOException e=" + e.getMessage());
+        } catch (Exception e) {
+            Log.e(TAG, "Exception e=" + e.getMessage());
         }
 
-@Override
-protected void onProgressUpdate(ArrayList<String>... values) {
+        return null;
+    }
+
+    @Override
+    protected void onProgressUpdate(ArrayList<String>... values) {
         super.onProgressUpdate(values);
 
-        if(this.progressUpdateCallback != null)
-        this.progressUpdateCallback.callback(values[0]);
-        }
-
-protected class EventCallback implements IotHubEventCallback {
-    public void execute(IotHubStatusCode status, Object context){
-        Integer i = (Integer) context;
-        Log.d(TAG, "IoT Hub responded to message "+i.toString()
-                + " with status " + status.name());
+        if (this.progressUpdateCallback != null)
+            this.progressUpdateCallback.callback(values[0]);
     }
-}
 
-// Our MQTT doesn't support abandon/reject, so we will only display the messaged received
+    protected class EventCallback implements IotHubEventCallback {
+        public void execute(IotHubStatusCode status, Object context) {
+            Integer i = (Integer) context;
+            Log.d(TAG, "IoT Hub responded to message " + i.toString()
+                    + " with status " + status.name());
+        }
+    }
+
+    // Our MQTT doesn't support abandon/reject, so we will only display the messaged received
 // from IoTHub and return COMPLETE
-class MessageCallbackMqtt implements com.microsoft.azure.iothub.MessageCallback
-{
-    public IotHubMessageResult execute(Message msg, Object context)
-    {
-        Counter counter = (Counter) context;
-        String content = new String(msg.getBytes(), Message.DEFAULT_IOTHUB_MESSAGE_CHARSET);
-        String mesg = "Received message " + counter.toString()
-                + " with content: " + content;
-        Log.d(TAG, "MessageCallbackMqtt "+mesg);
+    class MessageCallbackMqtt implements com.microsoft.azure.iothub.MessageCallback {
+        public IotHubMessageResult execute(Message msg, Object context) {
+            Counter counter = (Counter) context;
+            String content = new String(msg.getBytes(), Message.DEFAULT_IOTHUB_MESSAGE_CHARSET);
+            String mesg = "Received message " + counter.toString()
+                    + " with content: " + content;
+            Log.d(TAG, "MessageCallbackMqtt " + mesg);
 
-        publishMessage("RECEIVE", content);
+            publishMessage("RECEIVE", content);
 
-        counter.increment();
-        return IotHubMessageResult.COMPLETE;
-    }
-}
-
-protected class MessageCallback implements com.microsoft.azure.iothub.MessageCallback
-{
-    public IotHubMessageResult execute(Message msg, Object context)
-    {
-        Counter counter = (Counter) context;
-        String content = new String(msg.getBytes(), Message.DEFAULT_IOTHUB_MESSAGE_CHARSET);
-        String mesg = "Received message " + counter.toString()
-                + " with content: " + content;
-        Log.d(TAG, "MessageCallback "+mesg);
-
-        int switchVal = counter.get() % 3;
-        IotHubMessageResult res;
-        switch (switchVal)
-        {
-            case 0:
-                res = IotHubMessageResult.COMPLETE;
-                break;
-            case 1:
-                res = IotHubMessageResult.ABANDON;
-                break;
-            case 2:
-                res = IotHubMessageResult.REJECT;
-                break;
-            default:
-                // should never happen.
-                throw new IllegalStateException("Invalid message result specified.");
+            counter.increment();
+            return IotHubMessageResult.COMPLETE;
         }
-
-        Log.d(TAG, "Responding to message " + counter.toString() + " with " + res.name());
-
-        publishMessage("RECEIVE", content+" with "+res.name());
-
-        counter.increment();
-
-        return res;
     }
-}
+
+    protected class MessageCallback implements com.microsoft.azure.iothub.MessageCallback {
+        public IotHubMessageResult execute(Message msg, Object context) {
+            Counter counter = (Counter) context;
+            String content = new String(msg.getBytes(), Message.DEFAULT_IOTHUB_MESSAGE_CHARSET);
+            String mesg = "Received message " + counter.toString()
+                    + " with content: " + content;
+            Log.d(TAG, "MessageCallback " + mesg);
+
+            int switchVal = counter.get() % 3;
+            IotHubMessageResult res;
+            switch (switchVal) {
+                case 0:
+                    res = IotHubMessageResult.COMPLETE;
+                    break;
+                case 1:
+                    res = IotHubMessageResult.ABANDON;
+                    break;
+                case 2:
+                    res = IotHubMessageResult.REJECT;
+                    break;
+                default:
+                    // should never happen.
+                    throw new IllegalStateException("Invalid message result specified.");
+            }
+
+            Log.d(TAG, "Responding to message " + counter.toString() + " with " + res.name());
+
+            publishMessage("RECEIVE", content + " with " + res.name());
+
+            counter.increment();
+
+            return res;
+        }
+    }
 
     private void publishMessage(String key, String value) {
         ArrayList<String> values = new ArrayList<String>();
@@ -197,34 +186,55 @@ protected class MessageCallback implements com.microsoft.azure.iothub.MessageCal
         publishProgress(values);
     }
 
-/** Used as a counter in the message callback. */
-protected static class Counter
-{
-    protected int num;
+    private String getUTCdatetimeAsString() {
+        final String DATEFORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'";// ISO8601 format, https://zh.wikipedia.org/wiki/ISO_8601
+        final SimpleDateFormat sdf = new SimpleDateFormat(DATEFORMAT);
+        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+        final String utcTime = sdf.format(new Date());
 
-    public Counter(int num)
-    {
-        this.num = num;
+        return utcTime;
     }
 
-    public int get()
+    /* Simulate the real wind power */
+    private double getPower(int light, double depreciation)
     {
-        return this.num;
+        if (light <= 3)
+            return 0;
+        else if (light <= 7)
+            return (light - 3) * 50 * depreciation;
+        else if (light <= 9)
+            return (light - 7) * 100 * depreciation + 200;
+        else if (light < 12)
+            return (light - 9) * 200 * depreciation + 400;
+        else
+            return 1000 * depreciation;
     }
 
-    public void increment()
-    {
-        this.num++;
+    /**
+     * Used as a counter in the message callback.
+     */
+    protected static class Counter {
+        protected int num;
+
+        public Counter(int num) {
+            this.num = num;
+        }
+
+        public int get() {
+            return this.num;
+        }
+
+        public void increment() {
+            this.num++;
+        }
+
+        @Override
+        public String toString() {
+            return Integer.toString(this.num);
+        }
     }
 
-    @Override
-    public String toString()
-    {
-        return Integer.toString(this.num);
+    public interface ProgressUpdateCallback {
+        void callback(ArrayList<String> values);
     }
-}
-
-public interface ProgressUpdateCallback {
-    void callback(ArrayList<String> values);
-}
 }

@@ -4,7 +4,6 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
@@ -20,6 +19,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
     public static String connString = "HostName=iothubworkshop.azure-devices.net;DeviceId=AndroidDevice;SharedAccessKey=mxuTlxoqnaqyCAOoU00OY9S296FFup7oQFkHyzOwA1g=";
+
     //public static IotHubClientProtocol protocol = IotHubClientProtocol.HTTPS;
     public static IotHubClientProtocol protocol = IotHubClientProtocol.MQTT;
 
@@ -30,12 +30,12 @@ public class MainActivity extends AppCompatActivity {
     TextView receiveMessage;
     boolean isStartingToSend = false;
     private SendMessageAsyncTask sendTask;
-    TextView seekbarSpeedText;
+    TextView seekbarLightText;
     TextView seekbarDepreciationText;
-    SeekBar seekbarSpeed;
+    SeekBar seekbarLight;
     SeekBar seekbarDepreciation;
-    int windSpeed;
-    float depreciation;
+    int light;
+    double depreciation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,16 +49,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void findAllViews() {
-        btnSendMessage = (Button)findViewById(R.id.btnSend);
-        sendMessage = (TextView)findViewById(R.id.textSend);
-        receiveMessage = (TextView)findViewById(R.id.textReceive);
-        seekbarSpeedText = (TextView)findViewById(R.id.seekbarSpeedText);
-        seekbarDepreciationText = (TextView)findViewById(R.id.seekbarDepreciationText);
-        seekbarSpeed = (SeekBar)findViewById(R.id.seekbarSpeed);
-        seekbarSpeed.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        btnSendMessage = (Button) findViewById(R.id.btnSend);
+        sendMessage = (TextView) findViewById(R.id.textSend);
+        receiveMessage = (TextView) findViewById(R.id.textReceive);
+        seekbarLightText = (TextView) findViewById(R.id.seekbarLightText);
+        seekbarDepreciationText = (TextView) findViewById(R.id.seekbarDepreciationText);
+        seekbarLight = (SeekBar) findViewById(R.id.seekbarLight);
+        seekbarLight.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                seekbarSpeedText.setText("Wind Speed: "+progress);
+                saveAndUpdateLight(progress);
             }
 
             @Override
@@ -68,17 +68,19 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                setWindSpeed(seekBar.getProgress());
+                saveAndUpdateLight(seekBar.getProgress());
             }
         });
-        setWindSpeed(seekbarSpeed.getProgress());
-        seekbarDepreciation = (SeekBar)findViewById(R.id.seekbarDepreciation);
+
+        saveAndUpdateLight(seekbarLight.getProgress());
+
+        seekbarDepreciation = (SeekBar) findViewById(R.id.seekbarDepreciation);
         seekbarDepreciation.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 
-                Float f = (float)progress/100;
-                seekbarDepreciationText.setText("Depreciation: "+f.toString());
+                double depreciation = (double)progress / 100;
+                saveAndUpdateDepreciation(depreciation);
             }
 
             @Override
@@ -88,12 +90,27 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                Float f = (float)seekBar.getProgress()/100;
-                setDepreciation(f.floatValue());
+                double depreciation = (double)seekBar.getProgress() / 100;
+                saveAndUpdateDepreciation(depreciation);
             }
         });
-        Float f = (float)seekbarDepreciation.getProgress()/100;
-        setDepreciation(f.floatValue());
+
+        getAndUpdateDepreciation();
+    }
+
+    private void saveAndUpdateLight(int light) {
+        seekbarLightText.setText(getResources().getString(R.string.light)+": "+light);
+        setLight(light);
+    }
+
+    private void saveAndUpdateDepreciation(double depreciation) {
+        seekbarDepreciationText.setText(getResources().getString(R.string.depreciation)+": "+ depreciation);
+        setDepreciation(depreciation);
+    }
+
+    private void getAndUpdateDepreciation() {
+        double depreciation = (double)seekbarDepreciation.getProgress() / 100;
+        saveAndUpdateDepreciation(depreciation);
     }
 
     @Override
@@ -104,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void btnSendOnClick(View v) {
-        if(!isStartingToSend)
+        if (!isStartingToSend)
             sendMessage();
         else
             stopSendMessage();
@@ -118,14 +135,14 @@ public class MainActivity extends AppCompatActivity {
             public void callback(ArrayList<String> values) {
                 String key = values.get(0);
                 String value = values.get(1);
-                if(key.equals("SEND"))
+                if (key.equals("SEND"))
                     sendMessage.setText(value);
-                else if(key.equals("RECEIVE")) {
+                else if (key.equals("RECEIVE")) {
                     receiveMessage.setText(value);
 
                     Toast.makeText(getContext(),
                             value,
-                            Toast.LENGTH_LONG).show();
+                            Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -137,29 +154,30 @@ public class MainActivity extends AppCompatActivity {
     private Context getContext() {
         return this.context;
     }
+
     private void stopSendMessage() {
         isStartingToSend = false;
 
-        if(sendTask != null && sendTask.getStatus() != AsyncTask.Status.FINISHED)
+        if (sendTask != null && sendTask.getStatus() != AsyncTask.Status.FINISHED)
             sendTask.cancel(true);
 
-        sendMessage.setText(sendMessage.getText()+"(stopped)");
+        sendMessage.setText(sendMessage.getText() + "(stopped)");
         btnSendMessage.setText("Run");
     }
 
-    public float getDepreciation() {
+    public double getDepreciation() {
         return depreciation;
     }
 
-    public void setDepreciation(float depreciation) {
+    public void setDepreciation(double depreciation) {
         this.depreciation = depreciation;
     }
 
-    public int getWindSpeed() {
-        return windSpeed;
+    public int getLight() {
+        return light;
     }
 
-    public void setWindSpeed(int windSpeed) {
-        this.windSpeed = windSpeed;
+    public void setLight(int light) {
+        this.light = light;
     }
 }

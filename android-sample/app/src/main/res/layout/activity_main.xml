@@ -20,19 +20,18 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:id="@+id/seekbarSpeedLayout"
+        android:id="@+id/seekbarLightLayout"
         android:layout_marginTop="16dp"
         android:layout_below="@+id/btnSend">
         <TextView
-            android:id="@+id/seekbarSpeedText"
+            android:id="@+id/seekbarLightText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Wind Speed: 14"
             android:textColor="@android:color/black"
             android:textSize="16sp"
             />
         <SeekBar
-            android:id="@+id/seekbarSpeed"
+            android:id="@+id/seekbarLight"
             android:layout_height="wrap_content"
             android:layout_width="match_parent"
             android:max="20"
@@ -45,13 +44,12 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:id="@+id/seekbarDepreciationLayout"
-        android:layout_below="@+id/seekbarSpeedLayout"
+        android:layout_below="@+id/seekbarLightLayout"
         android:layout_marginTop="16dp">
         <TextView
             android:id="@+id/seekbarDepreciationText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Depreciation: 0.5"
             android:textColor="@android:color/black"
             android:textSize="16sp"
             />
