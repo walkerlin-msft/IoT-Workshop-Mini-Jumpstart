@@ -1,0 +1,11 @@
+SELECT
+    DateAdd(second, -20, System.TimeStamp) AS WinStartTime,
+    System.TimeStamp AS WinEndTime,
+    Stream2.IoTHub.ConnectionDeviceId AS IoTHubDeviceID,
+    AVG(Stream2.light) AS AvgLight
+INTO 
+    [servicebus]
+FROM
+    [iothub] Stream2
+GROUP BY Stream2.IoTHub.ConnectionDeviceId, SlidingWindow(second, 20)
+HAVING AvgLight > 17 OR AvgLight < 3
