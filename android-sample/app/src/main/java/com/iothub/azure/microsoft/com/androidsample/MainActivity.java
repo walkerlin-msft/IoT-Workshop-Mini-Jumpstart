@@ -18,7 +18,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
 
-    public static String connString = "[Please put your IoT Hub Connection String]";
+    public static String connString = "[device connection string]";
 
     //public static IotHubClientProtocol protocol = IotHubClientProtocol.HTTPS;
     public static IotHubClientProtocol protocol = IotHubClientProtocol.MQTT;
